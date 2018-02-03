@@ -6,13 +6,17 @@ Module for housing utilities for creating influence maps
 """
 
 import abc
+from collections import namedtuple
 
 import numpy as np
 
 # Since the coordinates on the halite map are represented by real numbers,
 # I need to decide a way to condense the representation of each coordinate
-_HEIGHT_MULT = 5    # multiplier on map height size
-_WIDTH_MULT = 5     # multiplier on map width size
+_HEIGHT_MULT = 1    # multiplier on map height size
+_WIDTH_MULT = 1     # multiplier on map width size
+
+
+MapDimensions = namedtuple("MapDimensions", ["width", "height"])
 
 
 class InfluenceMap(object, metaclass=abc.ABCMeta):
@@ -20,7 +24,6 @@ class InfluenceMap(object, metaclass=abc.ABCMeta):
         inherit this to ensure that all influence maps share the
         same shape.
     """
-
     map_width = None
     map_height = None
 
@@ -30,21 +33,25 @@ class InfluenceMap(object, metaclass=abc.ABCMeta):
         cls.map_height = height
 
     @classmethod
-    def get_map(cls):
+    def get_map_shape(cls):
         if cls.map_width is None or cls.map_height is None:
             raise ValueError("Must set map dimensions before calling "
                              "initializing any InfluenceMap objects.")
-        return np.zeros(
-            (_HEIGHT_MULT * cls.map_height,
-             _WIDTH_MULT * cls.map_width))
+        return MapDimensions(
+            width=_WIDTH_MULT * cls.map_width,
+            height=_HEIGHT_MULT * cls.map_height)
 
     def __init__(self):
-        self._map = self.get_map()
-
-    @abc.abstractmethod
-    def update_map(self, game_data):
-        pass
+        self._map = self.init_map()
 
     @property
     def map(self):
         return self._map
+
+    def init_map(self, *args, **kwargs):
+        map_shape = self.get_map_shape()
+        return np.zeros((map_shape.width, map_shape.height))
+
+    @abc.abstractmethod
+    def update_map(self, game_data):
+        pass
